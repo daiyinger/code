@@ -1,0 +1,1 @@
+/usr/bin/gcc  -O3 -DNDEBUG -O3 -Wall -Wextra -Wno-write-strings -Wno-missing-field-initializers    CMakeFiles/cktool.dir/cktool.c.o  -o cktool -rdynamic ../src/libcamkit.so -lpthread -lavutil -lavcodec -lswscale -Wl,-rpath,/home/pi/code/video/Camkit/build/src: 

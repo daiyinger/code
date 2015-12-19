@@ -1,0 +1,3 @@
+/home/pi/code/video/Camkit/build/src/CMakeFiles/camkit.dir
+/home/pi/code/video/Camkit/build/demo/CMakeFiles/cktool.dir
+/home/pi/code/video/Camkit/build/demo/CMakeFiles/simple_demo.dir
