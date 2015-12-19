@@ -122,7 +122,7 @@ int GetAnnexbNALU (NALU_t *nalu)
 	{
 		printf("GetAnnexbNALU: Could not allocate Buf memory\n");
 	}
-    printf("send ok 5\n");
+
 	nalu->startcodeprefix_len = 3;//初始化码流序列的开始字符为3个字节
   
 	if (3 != fread (Buf, 1, 3, bits))//从码流中读3个字节
@@ -162,7 +162,7 @@ int GetAnnexbNALU (NALU_t *nalu)
    StartCodeFound = 0;
    info2 = 0;
    info3 = 0;
-   printf("send ok 4\n");
+  
    while (!StartCodeFound)
    {
     if (feof (bits))//判断是否到了文件尾
@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
 	}
 	NALU_t *n;							//定义NALU结构指针
 	char* nalu_payload;  
-	char sendbuf[1024*50];
+	char sendbuf[1500];
 	
 	unsigned short seq_num =0;
 	int	bytes=0;
@@ -286,8 +286,7 @@ int main(int argc, char* argv[])
 			rtp_hdr->timestamp=htonl(ts_current);
 			bytes=n->len + 12 ;						//获得sendbuf的长度,为nalu的长度（包含NALU头但除去起始前缀）加上rtp_header的固定长度12字节
 			send( socket1, sendbuf, bytes, 0 );//发送rtp包
-			usleep(100);
-            printf("send ok %d\n");
+			//Sleep(100);
 		}		
 		else if(n->len>1400)
 		{
@@ -300,11 +299,9 @@ int main(int argc, char* argv[])
 			rtp_hdr->timestamp = htonl(ts_current);
 			while(t<=k)
 			{
-                printf("send ok 6\n");
 				rtp_hdr->seq_no = htons(seq_num ++); //序列号，每发送一个RTP包增1
 				if(!t)//发送一个需要分片的NALU的第一个分片，置FU HEADER的S位
 				{
-                    printf("send ok 7\n");
 					//设置rtp M 位；
 					rtp_hdr->marker = 0;
 					//设置FU INDICATOR,并将这个HEADER填入sendbuf[12]
@@ -327,13 +324,12 @@ int main(int argc, char* argv[])
 					bytes = 1400+14;						//获得sendbuf的长度,为nalu的长度（除去起始前缀和NALU头）加上rtp_header，fu_ind，fu_hdr的固定长度14字节
 					send( socket1, sendbuf, bytes, 0 );//发送rtp包
 					t++;
-                    usleep(100);
-					printf("send ok 1 \n");
+					
 				}
 				//发送一个需要分片的NALU的非第一个分片，清零FU HEADER的S位，如果该分片是该NALU的最后一个分片，置FU HEADER的E位
 				else if( k == t )//发送的是最后一个分片，注意最后一个分片的长度可能超过1400字节（当l>1386时）。
 				{
-					printf("send ok 8\n");
+					
 					//设置rtp M 位；当前传输的是最后一个分片时该位置1
 					rtp_hdr->marker = 1;
 					//设置FU INDICATOR,并将这个HEADER填入sendbuf[12]
@@ -350,21 +346,14 @@ int main(int argc, char* argv[])
 					fu_hdr->E = 1;
 
 					nalu_payload = &sendbuf[14];//同理将sendbuf[14]的地址赋给nalu_payload
-                    //printf("send ok 82 %d\n ",l-1);
-                    if((l-1) > 0)
-					{
-                        memcpy(nalu_payload,n->buf+t*1400+1,l-1);//将nalu最后剩余的l-1(去掉了一个字节的NALU头)字节内容写入sendbuf[14]开始的字符串。
-                    }
-                    bytes = l-1+14;		//获得sendbuf的长度,为剩余nalu的长度l-1加上rtp_header，FU_INDICATOR,FU_HEADER三个包头共14字节
-                    //printf("send ok 81\n");
-                    send( socket1, sendbuf, bytes, 0 );//发送rtp包
-                    t++;
-                    usleep(100);
-                   
+					memcpy(nalu_payload,n->buf+t*1400+1,l-1);//将nalu最后剩余的l-1(去掉了一个字节的NALU头)字节内容写入sendbuf[14]开始的字符串。
+					bytes = l-1+14;		//获得sendbuf的长度,为剩余nalu的长度l-1加上rtp_header，FU_INDICATOR,FU_HEADER三个包头共14字节
+					send( socket1, sendbuf, bytes, 0 );//发送rtp包
+					t++;
+					//	Sleep(100);
 				}
 				else if((t < k) && (0 != t))
 				{
-                    printf("send ok 9\n");
 					//设置rtp M 位；
 					rtp_hdr->marker = 0;
 					//设置FU INDICATOR,并将这个HEADER填入sendbuf[12]
@@ -386,8 +375,6 @@ int main(int argc, char* argv[])
 					bytes = 1400+14;						//获得sendbuf的长度,为nalu的长度（除去原NALU头）加上rtp_header，fu_ind，fu_hdr的固定长度14字节
 					send( socket1, sendbuf, bytes, 0 );//发送rtp包
 					t++;
-                    usleep(100);
-                    printf("send ok 3\n");
 				}
 			}
 		}
