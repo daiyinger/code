@@ -8,11 +8,11 @@ ffmpeg version 2.8.3 Copyright (c) 2000-2015 the FFmpeg developers
   libavfilter     5. 40.101 /  5. 40.101
   libswscale      3.  1.101 /  3.  1.101
   libswresample   1.  2.101 /  1.  2.101
-[mjpeg @ 0x2f0f230] Changeing bps to 8
+[mjpeg @ 0x286d230] Changeing bps to 8
 Input #0, image2, from 'out.jpg':
-  Duration: 00:00:00.04, start: 0.000000, bitrate: 2609 kb/s
+  Duration: 00:00:00.04, start: 0.000000, bitrate: 2544 kb/s
     Stream #0:0: Video: mjpeg, yuvj422p(pc, bt470bg/unknown/unknown), 320x240, 25 tbr, 25 tbn, 25 tbc
-[swscaler @ 0x2f0f880] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 0x286d880] deprecated pixel format used, make sure you did set range correctly
 Output #0, rawvideo, to 'tmp.yuv':
   Metadata:
     encoder         : Lavf56.40.101
