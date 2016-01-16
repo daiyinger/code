@@ -89,6 +89,12 @@ static int createSocket(int type) {
 #ifdef FD_CLOEXEC
   if (sock != -1) fcntl(sock, F_SETFD, FD_CLOEXEC);
 #endif
+  int on = 1;
+  if(setsockopt( sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)))
+  {
+
+  }
+
   return sock;
 }
 

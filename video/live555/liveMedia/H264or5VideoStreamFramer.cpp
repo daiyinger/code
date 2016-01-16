@@ -927,6 +927,7 @@ void H264or5VideoStreamParser
 #ifdef DEBUG
 	  fprintf(stderr, "Changed frame rate to %f fps\n", usingSource()->fFrameRate);
 #endif
+	  printf("Changed frame rate to %f fps\n", usingSource()->fFrameRate);
       }
     }
     // Ignore the rest of the payload (timestamps) for now... #####
@@ -1058,6 +1059,8 @@ unsigned H264or5VideoStreamParser::parse() {
 #ifdef DEBUG
 	  fprintf(stderr, "Set frame rate to %f fps\n", usingSource()->fFrameRate);
 #endif
+	  fprintf(stderr, "Set frame rate to %f fps\n", usingSource()->fFrameRate);
+	  printf("Set frame rate to %f fps\n", usingSource()->fFrameRate);
 	} else {
 #ifdef DEBUG
 	  fprintf(stderr, "\tThis \"Video Parameter Set\" NAL unit contained no frame rate information, so we use a default frame rate of %f fps\n", usingSource()->fFrameRate);
@@ -1079,6 +1082,7 @@ unsigned H264or5VideoStreamParser::parse() {
 #ifdef DEBUG
 	  fprintf(stderr, "Set frame rate to %f fps\n", usingSource()->fFrameRate);
 #endif
+	  fprintf(stderr, "Set frame rate to %f fps\n", usingSource()->fFrameRate);
 	} else {
 #ifdef DEBUG
 	  fprintf(stderr, "\tThis \"Sequence Parameter Set\" NAL unit contained no frame rate information, so we use a default frame rate of %f fps\n", usingSource()->fFrameRate);
