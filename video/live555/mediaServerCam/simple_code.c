@@ -16,7 +16,7 @@ extern "C"
 #include "x264.h"
 #endif
 
-#include "tcpTool.h"
+//#include "tcpTool.h"
  
 
 FILE* fp_dst = NULL;
@@ -60,6 +60,13 @@ int encode_init(void)
 	pParam->i_log_level  = X264_LOG_WARNING;//X264_LOG_DEBUG;
 	pParam->i_fps_num = 10;
 	pParam->i_csp=csp;
+	//	pParam->i_keyint_max = 100;
+	//	pParam->i_keyint_min = 10;
+    	//pParam->min_keyint = 10;
+	//pParam->i_frame_reference = 0; /* 参考帧的最大帧数 */
+	//pParam->rc.i_bitrate = 96;
+	//pParam->rc.i_rc_method = X264_RC_ABR;
+    	printf("bit rate %d reference %d\n",pParam->rc.i_bitrate,pParam->i_frame_reference);
 
 	x264_param_apply_profile(pParam, x264_profile_names[5]);
 
@@ -108,10 +115,42 @@ int encode_one_frame(unsigned char *src_data, unsigned char *dst_data, int *retL
 #endif
 	}
     *retLen = pos1;
-	frames++;
+	//frames++;
 	return ret;
 }
 
+int encode_one_frameExt(unsigned char *src_data, unsigned char **dst_data, int buffer_pos, int retLen[])
+{
+	int ret = 0;
+	int j = 0;
+	int pos = 0;
+
+	memcpy(pPic_in->img.plane[0], src_data, y_size);     //Y
+	pos += y_size;
+	memcpy(pPic_in->img.plane[1], src_data+pos, y_size/4);     //U
+	pos += y_size/4;
+	memcpy(pPic_in->img.plane[2], src_data+pos, y_size/4);     //V
+
+	pPic_in->i_pts = frames;
+
+	ret = x264_encoder_encode(pHandle, &pNals, &iNal, pPic_in, pPic_out);
+	if (ret < 0)
+	{
+		fprintf(stderr,"Error.\n");
+		return -1;
+	}
+	for (j = 0; j < iNal; ++j)
+	{
+	    if(dst_data != NULL)
+	    {
+		memcpy(((unsigned char *)dst_data+buffer_pos*j),pNals[j].p_payload,pNals[j].i_payload);
+		retLen[j] =  pNals[j].i_payload;
+		printf("j = %d %d\n",j,retLen[j]);
+	    }
+	}
+	frames++;
+	return ret;
+}
 int end_encode(void)
 {
 	int cnt = 0;

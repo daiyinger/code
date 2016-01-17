@@ -57,6 +57,13 @@ OnDemandServerMediaSubsession::~OnDemandServerMediaSubsession() {
 
 char const*
 OnDemandServerMediaSubsession::sdpLines() {
+#if 0
+fSDPLines = 
+	"m=video 0 RTP/AVP 96\r\n"
+        "c=IN IP4 0.0.0.0\r\n"
+        "b=AS:96\r\n"
+        "a=rtpmap:96 H264\r\n";
+#else
   if (fSDPLines == NULL) {
     // We need to construct a set of SDP lines that describe this
     // subsession (as a unicast stream).  To do so, we first create
@@ -78,7 +85,8 @@ OnDemandServerMediaSubsession::sdpLines() {
     delete dummyGroupsock;
     closeStreamSource(inputSource);
   }
-
+#endif
+  //printf("\n%s\n",fSDPLines);
   return fSDPLines;
 }
 

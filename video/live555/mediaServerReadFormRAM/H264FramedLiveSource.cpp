@@ -53,7 +53,7 @@ void H264FramedLiveSource::doGetNextFrame()
     {
         if(fMaxSize > 1000)
 		{
-            fFrameSize = fread(fTo,1,fMaxSize/10,fp); 
+            fFrameSize = fread(fTo,1,1000,fp); 
         }
         else
         {
@@ -77,9 +77,10 @@ void H264FramedLiveSource::doGetNextFrame()
         fseek(fp, 0, SEEK_SET);
 		printf("len %d\n",fFrameSize);
     }
+    usleep(200000);
 	//printf("--------------------------in\n");
     //fFrameSize = fMaxSize;
-    fDurationInMicroseconds = 20000;
+    //fDurationInMicroseconds = 20000;
     nextTask() = envir().taskScheduler().scheduleDelayedTask( 0,
         (TaskFunc*)FramedSource::afterGetting, this);//表示延迟0秒后再执行 afterGetting 函数
     return;

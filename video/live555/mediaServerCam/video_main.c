@@ -19,7 +19,7 @@
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include "simple_code.h"
-#include "fscale.h"
+//#include "fscale.h"
 //#include "tcpTool.h"
 #include "tinyjpeg.h"
 
@@ -141,10 +141,37 @@ void *pthread_video(int arg)
     return NULL;
 }
 unsigned char tbuffers[1024*1024*2];
-unsigned char Sendbufs[1024*100];
+unsigned char Sendbufs[1024*500];
+unsigned char FirstFramebufs[1024*500];
+int FirstFrameLen = 0;
 int g_encodeDataLen = 0;
-unsigned char read_flag = 1;
+unsigned char read_flag = 0;
 unsigned int delayCnt = 0;
+unsigned int firstFrameCnt = 0;
+//unsigned char data[8][1024*100];
+static int FindStartCode2 (unsigned char *Buf)
+{
+    if (Buf[0] != 0 || Buf[1] != 0 || Buf[2] != 1)
+    {
+	return 0; //判断是否为0x000001,如果是返回1
+    }
+    else
+    {
+	return 1;
+    }
+}
+
+static int FindStartCode3 (unsigned char *Buf)
+{
+    if (Buf[0] != 0 || Buf[1] != 0 || Buf[2] != 0 || Buf[3] != 1)
+    {
+	return 0;//判断是否为0x00000001,如果是返回1
+    }
+    else
+    {
+	return 1;
+    }
+}
 void *pthread_encode(void *arg)
 {
     int cnt = 0;
@@ -170,9 +197,60 @@ void *pthread_encode(void *arg)
 	{ 
 	    //fprintf(stderr,"- %d ",(unsigned int)(clock()-clockStart));
 	    //printf("start\n");
-	    encode_one_frame(tbuffers, ptrSendDataBuf, &encodeDatalen);
-	    g_encodeDataLen = encodeDatalen;
-	    read_flag = 1;
+	    /*encode_one_frame(tbuffers, ptrSendDataBuf, &encodeDatalen);
+	    unsigned int diff = (unsigned int)(clock()-clockStart);
+	    printf("- %d \n",diff/1000);
+	    g_encodeDataLen = encodeDatalen;*/
+	    if(firstFrameCnt < 1)
+	    {
+#if 1
+		unsigned char data[8][1024*50];
+		unsigned int len[8]={0};
+		int i = 0;
+		printf("len %d\n",sizeof(data[0]));
+		encode_one_frameExt(tbuffers,(unsigned char **)data,sizeof(data[0]), len);
+		i = 0;
+		while((len[i] != 0) &&(i < 8))
+		{
+		    if(FindStartCode2(data[i]))
+		    {
+			printf("Type %d\n",data[i][3]&0x1F);
+			if((data[i][3]&0x1F) == 0x05)
+			{
+			    data[i][3] &= 0xE0;
+			    data[i][3] |= 0x05;
+			}
+		    }	
+		    if(FindStartCode3(data[i]))
+		    {
+			printf("type %d\n",data[i][4]&0x1F);
+			 if((data[i][4]&0x1F) == 0x05)
+			 {
+			    data[i][4] &= 0xE0;
+			    data[i][4] |= 0x05;
+                         }
+
+		    }
+		    memcpy(FirstFramebufs+FirstFrameLen, data[i],len[i]);
+	            FirstFrameLen += len[i];
+		    printf("FirstFrameLen %d\n",FirstFrameLen);
+		    i++;
+		}
+#else
+		memcpy(FirstFramebufs+FirstFrameLen, ptrSendDataBuf, encodeDatalen);
+	        FirstFrameLen += encodeDatalen;
+		printf("FirstFrameLen %d\n",FirstFrameLen);
+#endif
+		firstFrameCnt++;
+	    }
+	    else
+	    {
+		encode_one_frame(tbuffers, ptrSendDataBuf, &encodeDatalen);
+		unsigned int diff = (unsigned int)(clock()-clockStart);
+		printf("- %d \n",diff/1000);
+		g_encodeDataLen = encodeDatalen;
+		read_flag = 1;
+	    }
 	    //SendData(Sendbufs, encodeDatalen, NORMAL_PACK);
 	}
         pthread_mutex_unlock(&g_lock1);
@@ -180,9 +258,9 @@ void *pthread_encode(void *arg)
     usleep(100);
     //SendData(Sendbufs, 0, END_PACK);
 }
-unsigned char rtsp_buf[1024*1000];
+unsigned char rtsp_buf[1024*1024];
 unsigned int rtspDataRemainLen = 0;
-int readOneFrame(unsigned char *buf, int want_size)
+int readOneFrame(unsigned char *buf, int want_size, unsigned char flag)
 {
     unsigned char *ptrSendDataBuf;   //发送Buffer数据指针
     int data_len;
@@ -195,6 +273,11 @@ int readOneFrame(unsigned char *buf, int want_size)
 	//printf("g_encodeDataLen = %d\n",g_encodeDataLen);
 	return g_encodeDataLen;
 #else	
+	if((flag == 1) && (FirstFrameLen > 0))
+	{
+	    memcpy(buf,FirstFramebufs,FirstFrameLen);
+	    return FirstFrameLen;
+	}
 	data_len = rtspDataRemainLen + g_encodeDataLen;
 	if(want_size < data_len)
 	{
@@ -205,13 +288,13 @@ int readOneFrame(unsigned char *buf, int want_size)
 		    memcpy(buf, rtsp_buf, rtspDataRemainLen);
 		}
 		memcpy(buf+rtspDataRemainLen, ptrSendDataBuf, 
-	    want_size-rtspDataRemainLen);
+		    want_size-rtspDataRemainLen);
 		memcpy(rtsp_buf, ptrSendDataBuf + \
 		    (want_size-rtspDataRemainLen),g_encodeDataLen\
 		    -(want_size-rtspDataRemainLen));
 		rtspDataRemainLen = 
 		    g_encodeDataLen-(want_size-rtspDataRemainLen);
-		 fprintf(stderr,"rtspDataRemainLen %d\n",rtspDataRemainLen);
+		 fprintf(stderr,"\n1 rtspDataRemainLen %d want %d\n",rtspDataRemainLen, want_size);
 	    }
 	    else
 	    {
@@ -222,7 +305,7 @@ int readOneFrame(unsigned char *buf, int want_size)
 		    g_encodeDataLen);
 		rtspDataRemainLen = rtspDataRemainLen - want_size 
 		    + g_encodeDataLen;
-		fprintf(stderr,"rtspDataRemainLen %d\n",rtspDataRemainLen);
+		fprintf(stderr,"\n 2 rtspDataRemainLen %d\n",rtspDataRemainLen);
 	    }
 	    read_flag--;
 	    return want_size;
@@ -256,7 +339,7 @@ int video(int num)
     buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory = V4L2_MEMORY_MMAP;
     buf.index = 0;
-    num = 1000;
+    num = 1000000;
     int cnt = 0;
     while(num > 0)
     {
@@ -342,7 +425,7 @@ void *video_init(void *arg)
     setMark();	                            //设置V4L2格式
     AllocMem();	                        //设置内存映射
 
-    //if(encode_init() != 0)
+    if(encode_init() != 0)
     {
       //  fprintf(stderr,"encode_init error \n");
     }
